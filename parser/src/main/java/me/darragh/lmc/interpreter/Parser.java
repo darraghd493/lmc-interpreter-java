@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
+ * Parses the LMC assembly source code into an array of instructions.
+ *
  * @author darraghd493
  * @since 1.0.0
  */

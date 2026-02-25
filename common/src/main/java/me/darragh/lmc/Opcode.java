@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * An enum representing the opcodes of the LMC assembly language.
+ *
  * @author darraghd493
  * @since 1.0.0
  */

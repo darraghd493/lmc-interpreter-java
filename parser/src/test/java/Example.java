@@ -1,6 +1,10 @@
 import me.darragh.lmc.Instruction;
 import me.darragh.lmc.interpreter.Parser;
 
+/**
+ * @author darraghd493
+ * @since 1.0.0
+ */
 public class Example {
     private static final String SOURCE = """
             // program:

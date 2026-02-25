@@ -1,10 +1,14 @@
 import me.darragh.lmc.Instruction;
-import me.darragh.lmc.interpreter.Interpreter;
+import me.darragh.lmc.interpreter.OptimisedInterpreter;
 import me.darragh.lmc.interpreter.IoHandler;
 import me.darragh.lmc.interpreter.Parser;
 
 import java.io.IOException;
 
+/**
+ * @author darraghd493
+ * @since 1.0.0
+ */
 public class Example {
     private static final String SOURCE = """
             // program:
@@ -118,7 +122,7 @@ public class Example {
         System.out.println("Parsing...");
         Parser parser = Parser.builder().build();
         Instruction[] instructions = parser.parse(SOURCE);
-        Interpreter interpreter = new Interpreter(instructions, IoHandler.of(
+        OptimisedInterpreter interpreter = new OptimisedInterpreter(instructions, IoHandler.of(
                 () -> {
                     try {
                         return System.in.read();

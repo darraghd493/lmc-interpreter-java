@@ -1,5 +1,11 @@
 package me.darragh.lmc.interpreter;
 
+/**
+ * Handles the I/O operations for an LMC interpreter.
+ *
+ * @author darraghd493
+ * @since 1.0.0
+ */
 public interface IoHandler {
     int readInput();
 

@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @Data
 @AllArgsConstructor
-public class IntermediaryInstruction {
+class IntermediaryInstruction {
     private final @NotNull Opcode opcode;
     private @Nullable String operand;
 }
