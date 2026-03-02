@@ -12,6 +12,13 @@ import java.util.Map;
 /**
  * An optimised interpreter for LMC. It does not faithfully follow the fetch-decode-execute cycle,
  * instead it simply iterates through the instructions and executes them directly.
+ * <br/>
+ * <h1>Limitation</h1>
+ * <h2>Memory Size</h2>
+ * The maximum size of a value is the integer limit, not following the 3-digit limit of LMC.
+ * This allows for more complex programs, but may not be faithful to the original specification.
+ * <h2>Memory Handling</h2>
+ * The memory does not hold the instructions, only the data. This means that self-modifying code is not possible, and that instructions cannot be treated as data.
  *
  * @author darraghd493
  * @since 1.0.0
@@ -42,9 +49,7 @@ public class OptimisedInterpreter implements Interpreter {
             throw new RuntimeException("Program counter out of bounds");
         }
 
-        Instruction instruction = this.instructions[this.programCounter]; // fetch
-        this.programCounter++;
-
+        Instruction instruction = this.instructions[this.programCounter++]; // fetch
         return this.execute(instruction);
     }
 

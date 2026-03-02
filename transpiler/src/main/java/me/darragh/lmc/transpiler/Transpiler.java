@@ -1,6 +1,7 @@
 package me.darragh.lmc.transpiler;
 
-import java.util.jar.JarFile;
+import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * @author darraghd493
@@ -8,4 +9,6 @@ import java.util.jar.JarFile;
  */
 public interface Transpiler {
     void build();
+
+    void save(Path path) throws IOException;
 }

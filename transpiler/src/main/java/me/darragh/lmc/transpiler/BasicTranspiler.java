@@ -17,6 +17,17 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
+/**
+ * A basic transpiler for LMC. It generates a Java class with static
+ * fields for memory and the accumulator, and a main method that implements the LMC logic.
+ * <br/>
+ * <h1>Limitation</h1>
+ * The maximum size of a value is the integer limit, not following the 3-digit limit of LMC.
+ * This allows for more complex programs, but may not be faithful to the original specification.
+ *
+ * @author darraghd493
+ * @since 1.0.0
+ */
 @RequiredArgsConstructor
 public class BasicTranspiler implements Transpiler, Opcodes {
     public static final String CLASS_NAME = "LMCProgram";
@@ -27,6 +38,7 @@ public class BasicTranspiler implements Transpiler, Opcodes {
     private final @NotNull Instruction[] instructions;
     private ClassNode classNode;
 
+    @Override
     public void build() {
         ClassNode classNode = new ClassNode();
         classNode.name = CLASS_NAME;
@@ -34,7 +46,7 @@ public class BasicTranspiler implements Transpiler, Opcodes {
         classNode.version = V1_8;
         classNode.superName = "java/lang/Object";
 
-        // Step 1: fiels
+        // Step 1: fields
         classNode.fields.add(new FieldNode(ACC_PRIVATE | ACC_STATIC, ACC_FIELD_NAME, "I", null, 0));
         classNode.fields.add(new FieldNode(ACC_PRIVATE | ACC_STATIC, MEM_FIELD_NAME, "[I", null, null));
         classNode.fields.add(new FieldNode(ACC_PRIVATE | ACC_STATIC, SCAN_FIELD_NAME, "Ljava/util/Scanner;", null, null));
@@ -145,6 +157,7 @@ public class BasicTranspiler implements Transpiler, Opcodes {
         this.classNode = classNode;
     }
 
+    @Override
     public void save(Path path) throws IOException {
         if (Files.exists(path)) Files.delete(path);
         try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(path))) {

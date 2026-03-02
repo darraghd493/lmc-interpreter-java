@@ -1,8 +1,5 @@
 import me.darragh.lmc.Instruction;
-import me.darragh.lmc.interpreter.InterpreterException;
-import me.darragh.lmc.interpreter.OptimisedInterpreter;
-import me.darragh.lmc.interpreter.IoHandler;
-import me.darragh.lmc.interpreter.Parser;
+import me.darragh.lmc.interpreter.*;
 
 import java.util.Scanner;
 
@@ -127,7 +124,7 @@ public class Example {
         for (Instruction instruction : instructions) {
             System.out.printf("%s\t%s%n", instruction.opcode().getOpcodeString(), instruction.operand());
         }
-        OptimisedInterpreter interpreter = OptimisedInterpreter.builder()
+        FaithfulInterpreter interpreter = FaithfulInterpreter.builder()
                 .instructions(instructions)
                 .ioHandler(IoHandler.of(
                         () -> {
