@@ -1,9 +1,10 @@
 import me.darragh.lmc.Instruction;
+import me.darragh.lmc.interpreter.InterpreterException;
 import me.darragh.lmc.interpreter.OptimisedInterpreter;
 import me.darragh.lmc.interpreter.IoHandler;
 import me.darragh.lmc.interpreter.Parser;
 
-import java.io.IOException;
+import java.util.Scanner;
 
 /**
  * @author darraghd493
@@ -91,6 +92,7 @@ public class Example {
             	otc
             	lda char_e
             	otc
+            	hlt
             
             
             
@@ -118,26 +120,29 @@ public class Example {
             char_3  dat 51
             """;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterpreterException {
         System.out.println("Parsing...");
         Parser parser = Parser.builder().build();
         Instruction[] instructions = parser.parse(SOURCE);
-        OptimisedInterpreter interpreter = new OptimisedInterpreter(instructions, IoHandler.of(
-                () -> {
-                    try {
-                        return System.in.read();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                },
-                (value, character) -> {
-                    if (character) {
-                        System.out.print((char) value);
-                    } else {
-                        System.out.println(value);
-                    }
-                }
-        ));
+        for (Instruction instruction : instructions) {
+            System.out.printf("%s\t%s%n", instruction.opcode().getOpcodeString(), instruction.operand());
+        }
+        OptimisedInterpreter interpreter = OptimisedInterpreter.builder()
+                .instructions(instructions)
+                .ioHandler(IoHandler.of(
+                        () -> {
+                            Scanner scanner = new Scanner(System.in);
+                            System.out.print("Input: ");
+                            return scanner.nextInt();
+                        },
+                        (value, character) -> {
+                            if (character) {
+                                System.out.print((char) value);
+                            } else {
+                                System.out.println(value);
+                            }
+                        }
+                )).build();
         interpreter.run();
     }
 }

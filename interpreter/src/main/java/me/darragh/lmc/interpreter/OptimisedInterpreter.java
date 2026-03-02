@@ -1,6 +1,6 @@
 package me.darragh.lmc.interpreter;
 
-import lombok.RequiredArgsConstructor;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import me.darragh.lmc.Instruction;
 import me.darragh.lmc.Opcode;
@@ -17,14 +17,14 @@ import java.util.Map;
  * @since 1.0.0
  */
 @Slf4j
-@RequiredArgsConstructor
+@Builder
 public class OptimisedInterpreter implements Interpreter {
     private final @NotNull Instruction[] instructions;
     private final @NotNull IoHandler ioHandler;
 
     private final Map<Integer, Integer> memory = new HashMap<>();
 
-    private int programCounter = 0, accumulator = 0;
+    private int programCounter, accumulator;
 
     @Override
     public void prepare() {
@@ -42,38 +42,35 @@ public class OptimisedInterpreter implements Interpreter {
             throw new RuntimeException("Program counter out of bounds");
         }
 
-        Instruction instruction = this.instructions[this.programCounter];
-        boolean result = this.execute(instruction);
+        Instruction instruction = this.instructions[this.programCounter]; // fetch
         this.programCounter++;
 
-        return result;
+        return this.execute(instruction);
     }
 
     private boolean execute(@NotNull Instruction instruction) throws InterpreterException {
         boolean result = true;
         switch (instruction.opcode()) {
             case HLT -> result = false;
-            case ADD -> this.accumulator = this.memory.getOrDefault(instruction.operand(), 0) + this.accumulator;
-            case SUB -> this.accumulator = this.memory.getOrDefault(instruction.operand(), 0) - this.accumulator;
+            case ADD -> this.accumulator += this.memory.getOrDefault(instruction.operand(), 0);
+            case SUB -> this.accumulator -= this.memory.getOrDefault(instruction.operand(), 0);
             case STA, STO -> this.memory.put(instruction.operand(), this.accumulator);
             case LDA -> this.accumulator = this.memory.getOrDefault(instruction.operand(), 0);
-            case BRA -> this.programCounter = instruction.operand() - 1;
+            case BRA -> this.programCounter = instruction.operand();
             case BRZ -> {
                 if (this.accumulator == 0) {
-                    this.programCounter = instruction.operand() - 1;
+                    this.programCounter = instruction.operand();
                 }
             }
             case BRP -> {
                 if (this.accumulator >= 0) {
-                    this.programCounter = instruction.operand() - 1;
+                    this.programCounter = instruction.operand();
                 }
             }
             case INP -> this.accumulator = this.ioHandler.readInput();
             case OUT -> this.ioHandler.pushOutput(this.accumulator);
             case OTC -> this.ioHandler.pushOutput(this.accumulator, true);
-            case ERR -> {
-                throw new InterpreterException("Invalid instruction (ERR) at address " + this.programCounter + ": " + instruction);
-            }
+            case ERR -> throw new InterpreterException("Invalid instruction (ERR) at address " + this.programCounter + ": " + instruction);
         }
         return result;
     }
