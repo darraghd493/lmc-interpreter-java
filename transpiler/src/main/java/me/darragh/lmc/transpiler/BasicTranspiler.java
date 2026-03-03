@@ -35,6 +35,8 @@ public class BasicTranspiler implements Transpiler, Opcodes {
     private static final String ACC_FIELD_NAME = "accumulator";
     private static final String SCAN_FIELD_NAME = "scanner";
 
+    private final Map<Integer, Integer> memoryIndexTranslations = new HashMap<>();
+
     private final @NotNull Instruction[] instructions;
     private ClassNode classNode;
 
@@ -63,17 +65,26 @@ public class BasicTranspiler implements Transpiler, Opcodes {
         ci.add(new MethodInsnNode(INVOKESPECIAL, "java/util/Scanner", "<init>", "(Ljava/io/InputStream;)V", false));
         ci.add(new FieldInsnNode(PUTSTATIC, CLASS_NAME, SCAN_FIELD_NAME, "Ljava/util/Scanner;"));
 
+        // pre-count DAT instructions to determine memory size
+        int datCount = 0;
+        for (Instruction instruction : instructions) {
+            if (instruction.opcode() == Opcode.DAT) datCount++;
+        }
+
         // init memory array
         // memory = new int[instructions.length]
-        ci.add(pushInt(instructions.length));
+        ci.add(pushInt(datCount));
         ci.add(new IntInsnNode(NEWARRAY, T_INT));
 
         // fill DAT values into array
+        int instructionDats = 0;
         for (int i = 0; i < instructions.length; i++) {
-            if (instructions[i].opcode() == Opcode.DAT) {
+            Instruction instruction = instructions[i];
+            if (instruction.opcode() == Opcode.DAT) {
+                this.memoryIndexTranslations.put(i, instructionDats);
                 ci.add(new InsnNode(DUP)); // duplicate array ref
-                ci.add(pushInt(i)); // index
-                ci.add(pushInt(instructions[i].operand())); // value
+                ci.add(pushInt(instructionDats++)); // index
+                ci.add(pushInt(instruction.operand())); // value
                 ci.add(new InsnNode(IASTORE));
             }
         }
@@ -94,12 +105,14 @@ public class BasicTranspiler implements Transpiler, Opcodes {
             main.instructions.add(new LineNumberNode(i, l));
             main.instructions.add(l);
 
+            int operandLocation = ins.operand() == null ? -1 : this.getMemoryLocation(ins.operand());
+
             switch (ins.opcode()) {
                 case HLT -> main.instructions.add(new InsnNode(RETURN));
                 case ADD -> {
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, MEM_FIELD_NAME, "[I"));
-                    main.instructions.add(pushInt(ins.operand()));
+                    main.instructions.add(pushInt(operandLocation));
                     main.instructions.add(new InsnNode(IALOAD));
                     main.instructions.add(new InsnNode(IADD));
                     main.instructions.add(new FieldInsnNode(PUTSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
@@ -107,31 +120,31 @@ public class BasicTranspiler implements Transpiler, Opcodes {
                 case SUB -> {
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, MEM_FIELD_NAME, "[I"));
-                    main.instructions.add(pushInt(ins.operand()));
+                    main.instructions.add(pushInt(operandLocation));
                     main.instructions.add(new InsnNode(IALOAD));
                     main.instructions.add(new InsnNode(ISUB));
                     main.instructions.add(new FieldInsnNode(PUTSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
                 }
                 case STA, STO -> {
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, MEM_FIELD_NAME, "[I"));
-                    main.instructions.add(pushInt(ins.operand()));
+                    main.instructions.add(pushInt(operandLocation));
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
                     main.instructions.add(new InsnNode(IASTORE));
                 }
                 case LDA -> {
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, MEM_FIELD_NAME, "[I"));
-                    main.instructions.add(pushInt(ins.operand()));
+                    main.instructions.add(pushInt(operandLocation));
                     main.instructions.add(new InsnNode(IALOAD));
                     main.instructions.add(new FieldInsnNode(PUTSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
                 }
-                case BRA -> main.instructions.add(new JumpInsnNode(GOTO, labels.get(ins.operand())));
+                case BRA -> main.instructions.add(new JumpInsnNode(GOTO, labels.get(operandLocation)));
                 case BRZ -> {
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
-                    main.instructions.add(new JumpInsnNode(IFEQ, labels.get(ins.operand())));
+                    main.instructions.add(new JumpInsnNode(IFEQ, labels.get(operandLocation)));
                 }
                 case BRP -> {
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, ACC_FIELD_NAME, "I"));
-                    main.instructions.add(new JumpInsnNode(IFGE, labels.get(ins.operand())));
+                    main.instructions.add(new JumpInsnNode(IFGE, labels.get(operandLocation)));
                 }
                 case INP -> {
                     main.instructions.add(new FieldInsnNode(GETSTATIC, CLASS_NAME, SCAN_FIELD_NAME, "Ljava/util/Scanner;"));
@@ -172,6 +185,12 @@ public class BasicTranspiler implements Transpiler, Opcodes {
             jos.write(manifest.getBytes());
             jos.closeEntry();
         }
+    }
+
+    private int getMemoryLocation(int instructionLocation) {
+        int memoryLocation = this.memoryIndexTranslations.size();
+        this.memoryIndexTranslations.put(instructionLocation, memoryLocation);
+        return memoryLocation;
     }
 
     private static AbstractInsnNode pushInt(int value) {
